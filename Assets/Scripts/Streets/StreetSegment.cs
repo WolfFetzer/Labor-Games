@@ -31,22 +31,41 @@ public class StreetSegment : MonoBehaviour
     {
         StreetPoints = points;
         Thickness = thickness;
-
-        CalculateLength(points);
-
-        Vector2 dir2D = new Vector2(points[1].x - points[0].x, points[1].z - points[0].z).normalized;
-        Vector2 normal2D = Vector2.Perpendicular(dir2D);
-        Vector3 normal = new Vector3(normal2D.x, 0f, normal2D.y);
         
         edge1 = new List<Vector3>();
         edge2 = new List<Vector3>();
+
+        CalculateLength(points);
         
-        Vector3 laneOffset = thickness * 0.25f * normal;
-        for (int i = 0; i < points.Count; i++)
+        Vector3 laneOffset = CalculateLaneOffset(0);
+        edge1.Add(points[0] - laneOffset);
+        edge2.Add(points[points.Count - 1] + laneOffset);
+        
+        for (int i = 1; i < points.Count - 1; i++)
         {
+            laneOffset = (CalculateLaneOffset(i-1) + CalculateLaneOffset(i)).normalized;
             edge1.Add(points[i] - laneOffset);
-            edge2.Add(points[points.Count - 1 - i ] + laneOffset);
+            edge2.Add(points[points.Count - 1 - i] + laneOffset);
+            
+            Debug.Log(i);
         }
+        Debug.Log("Points: " + points.Count);
+        
+        laneOffset = CalculateLaneOffset(points.Count - 2);
+        edge1.Add(points[points.Count - 1] - laneOffset);
+        edge2.Add(points[0] + laneOffset);
+    }
+
+    private Vector3 CalculateLaneOffset(int index)
+    {
+        Debug.Log(index + ", " + (index + 1));
+        
+        Vector2 dir2D = new Vector2(StreetPoints[index + 1].x - StreetPoints[index].x, StreetPoints[index + 1].z - StreetPoints[index].z).normalized;
+        Vector2 normal2D = Vector2.Perpendicular(dir2D);
+        Vector3 normal = new Vector3(normal2D.x, 0f, normal2D.y).normalized;
+        
+        //TODO anpassen: 0.25 da 2 lanes und jeweils mittig platzier
+        return Thickness * 0.25f * normal;
     }
 
     private void CalculateLength(List<Vector3> points)

@@ -174,57 +174,177 @@ public class ConstructionManager
             StreetSegment hitSegment = hit.transform.GetComponent<StreetSegment>();
             point = GetStreetPoint(hitSegment, hit, out _endPlacementMode);
 
-            if (_endPlacementMode == PlacementMode.Split && _startPlacementMode == PlacementMode.Split)
+            if (_endPlacementMode == PlacementMode.Split)
             {
                 endIntersection = SplitStreetSegment(ref hitSegment, point);
-            }
-            else if (_endPlacementMode == PlacementMode.AdditionAtTheBeginning)
-            {
-                if (_startPlacementMode == PlacementMode.AdditionAtTheBeginning)
+                
+                if (_startPlacementMode == PlacementMode.Default)
                 {
-                    
+                    GenerateStraightStreet(_lastPoint, point, startIntersection, endIntersection);
+                }
+                else if (_startPlacementMode == PlacementMode.Split)
+                {
+                    startIntersection = SplitStreetSegment(ref _lastSegment, _lastPoint);
+                    GenerateStraightStreet(_lastPoint, point, startIntersection, endIntersection);
+                }
+                else if (_startPlacementMode == PlacementMode.AdditionAtTheBeginning)
+                {
+                    List<Vector3> points = _lastSegment.StreetPoints;
+                    points.Insert(0, point);
+                    StreetSegment segment = StreetGenerator.GenerateComplexStreetGameObject(points).GetComponent<StreetSegment>();
+                    segment.Intersections[0] = endIntersection;
+                    segment.Intersections[1] = _lastSegment.Intersections[1];
+            
+                    Object.Destroy(_lastSegment.gameObject);
                 }
                 else if (_startPlacementMode == PlacementMode.AdditionAtTheEnd)
                 {
-                    
+                    List<Vector3> points = _lastSegment.StreetPoints;
+                    points.Add(point);
+                    StreetSegment segment = StreetGenerator.GenerateComplexStreetGameObject(points).GetComponent<StreetSegment>();
+                    segment.Intersections[0] = _lastSegment.Intersections[0];
+                    segment.Intersections[1] = endIntersection;
+            
+                    Object.Destroy(_lastSegment.gameObject);
                 }
-                List<Vector3> points = hitSegment.StreetPoints;
-                points.Insert(0, _lastPoint);
-                StreetSegment segment = StreetGenerator.GenerateComplexStreetGameObject(points).GetComponent<StreetSegment>();
-                segment.Intersections[0] = hitSegment.Intersections[0];
-                segment.Intersections[1] = hitSegment.Intersections[1];
+            }
+            else if (_endPlacementMode == PlacementMode.AdditionAtTheBeginning)
+            {
+                if (_startPlacementMode == PlacementMode.Default)
+                {
+                    List<Vector3> points = hitSegment.StreetPoints;
+                    points.Insert(0, _lastPoint);
+                    StreetSegment segment = StreetGenerator.GenerateComplexStreetGameObject(points).GetComponent<StreetSegment>();
+                    segment.Intersections[1] = hitSegment.Intersections[1];
             
-                Object.Destroy(hitSegment.gameObject);
-
-                _isActive = false;
-                ResetPreviewStreet();
+                    Object.Destroy(hitSegment.gameObject);
+                }
+                else if (_startPlacementMode == PlacementMode.Split)
+                {
+                    startIntersection = SplitStreetSegment(ref _lastSegment, _lastPoint);
+                    
+                    List<Vector3> points = hitSegment.StreetPoints;
+                    points.Insert(0, _lastPoint);
+                    StreetSegment segment = StreetGenerator.GenerateComplexStreetGameObject(points).GetComponent<StreetSegment>();
+                    segment.Intersections[0] = startIntersection;
+                    segment.Intersections[1] = hitSegment.Intersections[1];
+                    
+                    Object.Destroy(hitSegment.gameObject);
+                }
+                else if (_startPlacementMode == PlacementMode.AdditionAtTheBeginning)
+                {
+                    List<Vector3> startPoints = _lastSegment.StreetPoints;
+                    startPoints.Reverse();
+                    List<Vector3> points = hitSegment.StreetPoints;
+                    points.InsertRange(0, startPoints);
+                    StreetSegment segment = StreetGenerator.GenerateComplexStreetGameObject(points).GetComponent<StreetSegment>();
+                    segment.Intersections[0] = _lastSegment.Intersections[1];
+                    segment.Intersections[1] = hitSegment.Intersections[1];
+                    
+                    Object.Destroy(_lastSegment.gameObject);
+                    Object.Destroy(hitSegment.gameObject);
+                }
+                else if (_startPlacementMode == PlacementMode.AdditionAtTheEnd)
+                {
+                    List<Vector3> points = _lastSegment.StreetPoints;
+                    points.AddRange(hitSegment.StreetPoints);
+                    StreetSegment segment = StreetGenerator.GenerateComplexStreetGameObject(points).GetComponent<StreetSegment>();
+                    segment.Intersections[0] = _lastSegment.Intersections[0];
+                    segment.Intersections[1] = hitSegment.Intersections[1];
             
-                return;
+                    Object.Destroy(_lastSegment.gameObject);
+                    Object.Destroy(hitSegment.gameObject);
+                }
             }
             else if (_endPlacementMode == PlacementMode.AdditionAtTheEnd)
             {
-                List<Vector3> points = hitSegment.StreetPoints;
-                points.Add(_lastPoint);
-                StreetSegment segment = StreetGenerator.GenerateComplexStreetGameObject(points).GetComponent<StreetSegment>();
-                segment.Intersections[0] = hitSegment.Intersections[0];
-                segment.Intersections[1] = hitSegment.Intersections[1];
+                if (_startPlacementMode == PlacementMode.Default)
+                {
+                    List<Vector3> points = hitSegment.StreetPoints;
+                    points.Add(_lastPoint);
+                    StreetSegment segment = StreetGenerator.GenerateComplexStreetGameObject(points).GetComponent<StreetSegment>();
+                    segment.Intersections[0] = hitSegment.Intersections[0];
             
-                Object.Destroy(hitSegment.gameObject);
-
-                _isActive = false;
-                ResetPreviewStreet();
-            
-                return;
+                    Object.Destroy(hitSegment.gameObject);
+                }
+                else if (_startPlacementMode == PlacementMode.Split)
+                {
+                    startIntersection = SplitStreetSegment(ref _lastSegment, _lastPoint);
+                    
+                    List<Vector3> points = hitSegment.StreetPoints;
+                    points.Add(_lastPoint);
+                    StreetSegment segment = StreetGenerator.GenerateComplexStreetGameObject(points).GetComponent<StreetSegment>();
+                    segment.Intersections[0] = hitSegment.Intersections[0];
+                    segment.Intersections[1] = startIntersection;
+                    
+                    Object.Destroy(hitSegment.gameObject);
+                }
+                else if (_startPlacementMode == PlacementMode.AdditionAtTheBeginning)
+                {
+                    List<Vector3> points = hitSegment.StreetPoints;
+                    points.AddRange(_lastSegment.StreetPoints);
+                    StreetSegment segment = StreetGenerator.GenerateComplexStreetGameObject(points).GetComponent<StreetSegment>();
+                    segment.Intersections[0] = hitSegment.Intersections[0];
+                    segment.Intersections[1] = _lastSegment.Intersections[1];
+                    
+                    Object.Destroy(_lastSegment.gameObject);
+                    Object.Destroy(hitSegment.gameObject);
+                }
+                else if (_startPlacementMode == PlacementMode.AdditionAtTheEnd)
+                {
+                    List<Vector3> startPoints = _lastSegment.StreetPoints;
+                    startPoints.Reverse();
+                    List<Vector3> points = hitSegment.StreetPoints;
+                    points.AddRange(startPoints);
+                    StreetSegment segment = StreetGenerator.GenerateComplexStreetGameObject(points).GetComponent<StreetSegment>();
+                    segment.Intersections[0] = hitSegment.Intersections[0];
+                    segment.Intersections[1] = _lastSegment.Intersections[0];
+                    
+                    Object.Destroy(_lastSegment.gameObject);
+                    Object.Destroy(hitSegment.gameObject);
+                }
             }
-            
         }
         else if (Physics.Raycast(ray, out hit, 10000f, _floorLayerMask))
         {
             point = hit.point;
             _endPlacementMode = PlacementMode.Default;
+
+            if (_startPlacementMode == PlacementMode.Default)
+            {
+                GenerateStraightStreet(_lastPoint, point, startIntersection, endIntersection);
+            }
+            else if (_startPlacementMode == PlacementMode.Split)
+            {
+                startIntersection = SplitStreetSegment(ref _lastSegment, _lastPoint);
+                GenerateStraightStreet(_lastPoint, point, startIntersection, endIntersection);
+            }
+            else if (_startPlacementMode == PlacementMode.AdditionAtTheBeginning)
+            {
+                List<Vector3> points = _lastSegment.StreetPoints;
+                points.Insert(0, point);
+                StreetSegment segment = StreetGenerator.GenerateComplexStreetGameObject(points).GetComponent<StreetSegment>();
+                segment.Intersections[1] = _lastSegment.Intersections[1];
+            
+                Object.Destroy(_lastSegment.gameObject);
+            }
+            else if (_startPlacementMode == PlacementMode.AdditionAtTheEnd)
+            {
+                List<Vector3> points = _lastSegment.StreetPoints;
+                points.Add(point);
+                StreetSegment segment = StreetGenerator.GenerateComplexStreetGameObject(points).GetComponent<StreetSegment>();
+                segment.Intersections[0] = _lastSegment.Intersections[0];
+
+                Object.Destroy(_lastSegment.gameObject);
+            }
         }
         else return;
         
+        _lastSegment = null;
+        _isActive = false;
+        ResetPreviewStreet();
+
+        /*
         if (_startPlacementMode == PlacementMode.Split)
         {
             startIntersection = SplitStreetSegment(ref _lastSegment, _lastPoint);
@@ -242,8 +362,6 @@ public class ConstructionManager
 
             _isActive = false;
             ResetPreviewStreet();
-            
-            return;
         }
         else if (_startPlacementMode == PlacementMode.AdditionAtTheEnd)
         {
@@ -258,27 +376,27 @@ public class ConstructionManager
 
             _isActive = false;
             ResetPreviewStreet();
-            
-            return;
         }
-        
-        _isActive = false;
 
-        StreetSegment newSegment =
-            StreetGenerator.GenerateStraightGameObject(_lastPoint, point).GetComponent<StreetSegment>();
-        newSegment.Intersections[0] = startIntersection;
-        newSegment.Intersections[1] = endIntersection;
-
-        //Connect the new Intersection if both ends hit a street
-        if (startIntersection != null && endIntersection != null)
-        {
-            startIntersection.AddNeibhor("Zeile 108", endIntersection, newSegment, newSegment.edge1);
-            endIntersection.AddNeibhor("Zeile 109", startIntersection, newSegment, newSegment.edge2);
-        }
 
         ResetPreviewStreet();
-        
-        Debug.Log(_startPlacementMode.ToString() + ", " + _endPlacementMode.ToString());
+    */
+    }
+
+    private StreetSegment GenerateStraightStreet(Vector3 start, Vector3 end, Intersection startIntersection, Intersection endIntersection)
+    {
+        StreetSegment segment = StreetGenerator.GenerateStraightGameObject(start, end).GetComponent<StreetSegment>();
+        segment.Intersections[0] = startIntersection;
+        segment.Intersections[1] = endIntersection;
+
+        if (startIntersection != null && endIntersection != null)
+        {
+            //Connect the new Intersection if both ends hit a street
+            startIntersection.AddNeibhor("Zeile 108", endIntersection, segment, segment.edge1);
+            endIntersection.AddNeibhor("Zeile 109", startIntersection, segment, segment.edge2);
+        }
+
+        return segment;
     }
 
     private void ResetPreviewStreet()

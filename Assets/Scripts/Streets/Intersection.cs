@@ -8,6 +8,9 @@ public class Intersection : MonoBehaviour
 {
     private static int _counter;
 
+    //TODO entfernen
+    public static List<Intersection> Intersections = new List<Intersection>();
+
     public int ID { get; private set; }
     public List<IntersectionEdge> Edges { get; } = new List<IntersectionEdge>();
 
@@ -48,6 +51,8 @@ public class Intersection : MonoBehaviour
     {
         ID = _counter;
         name = "Intersection " + _counter++;
+        
+        Intersections.Add(this);
     }
 
     private void OnDrawGizmos()

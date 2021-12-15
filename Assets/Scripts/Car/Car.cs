@@ -46,6 +46,7 @@ public class Car : MonoBehaviour
                 else
                 {
                     _hasTarget = false;
+                    PathManager.RemoveCar(this);
                     return;
                 }
             }
@@ -76,6 +77,7 @@ public class Car : MonoBehaviour
     private void CalculateDirection()
     {
         _direction = (_currentWaypoint - transform.position).normalized;
+        transform.rotation = Quaternion.LookRotation(_direction);
     }
 
     public void Move(PathNode node)

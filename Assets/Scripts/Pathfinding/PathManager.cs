@@ -2,25 +2,73 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 public class PathManager : MonoBehaviour
 {
     //Debug only
+    /*
     public StreetSegment startSegment;
     public StreetSegment targetSegment;
     public bool startAtOne = true;
     public Car car;
+    */
     
     public bool update = false;
+
+    public static List<Car> Cars = new List<Car>();
+
+    public static void RemoveCar(Car car)
+    {
+        if (Cars.Contains(car))
+        {
+            Cars.Remove(car);
+            Destroy(car.gameObject);
+            Debug.Log("Destroyed");
+        }
+    }
 
     private void FixedUpdate()
     {
         if (update)
         {
             update = false;
-            
-            Debug.Log("Update");
 
+            int count = Intersection.Intersections.Count;
+            if (count < 2)
+            {
+                Debug.Log("Not enough intersections");
+                return;
+            }
+            
+            
+            Debug.Log("Spawn");
+            int random = (int) (Random.value * count);
+            Intersection startIntersection = Intersection.Intersections[random];
+
+            int random2;
+            int i = 0;
+            do
+            {
+                random2 = (int) (Random.value * count);
+            } while (random == random2 || i++ < 10);
+
+            Intersection targetIntersection = Intersection.Intersections[random2];
+            
+            
+            PathGraph pg = new PathGraph();
+            
+            PathNode p = 
+                pg.CalculateShortestWay(new PathNode(startIntersection), new PathNode(targetIntersection));
+
+            Debug.Log(p.WritePath());
+            
+            Car car = 
+                Instantiate(GameManager.Instance.carPrefab, startIntersection.transform.position, Quaternion.identity).GetComponent<Car>();
+            car.Move(p);
+            Cars.Add(car);
+
+            /*
             if (startSegment == null)
             {
                 Debug.Log("Select a Street Segment");
@@ -68,11 +116,14 @@ public class PathManager : MonoBehaviour
             car = 
                 Instantiate(GameManager.Instance.carPrefab, pos, Quaternion.identity).GetComponent<Car>();
             car.Move(p);
+            */
         }
     }
 
+    
     private Intersection GetStartIntersection(int firstChoice, int secondChoice)
     {
+        /*
         if (startSegment.Intersections[firstChoice] != null)
         {
             return startSegment.Intersections[firstChoice];
@@ -81,6 +132,7 @@ public class PathManager : MonoBehaviour
         {
             return startSegment.Intersections[secondChoice];
         }
+        */
 
         return null;
     }
