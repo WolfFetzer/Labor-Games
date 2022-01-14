@@ -1,23 +1,56 @@
 using System;
 using System.Collections.Generic;
+using Buildings.BuildingArea;
 //TODO entfernen
 #if UNITY_EDITOR
     using UnityEditor;
 #endif
 using UnityEngine;
+using Util;
+
+/// <summary>
+/// Forward means that the streetpoint direction is ascending, backwards decending
+/// </summary>
+public enum StreetDirection
+{
+    Forward, Backward
+}
 
 public class StreetSegment : MonoBehaviour
 {
     public static int Counter;
     public List<Vector3> StreetPoints { get; private set; }
 
-    public Intersection[] Intersections { get; } = new Intersection[2];
+    public BuildingArea[] BuildingAreas { get; set; } = new BuildingArea[2];
+
+    public bool IsConnected { get; private set; }
+    private Intersection[] _intersections = new Intersection[2];
+    public Intersection IntersectionAtStart
+    {
+        get => _intersections[0];
+        set
+        {
+            _intersections[0] = value;
+            IsConnected = true;
+        } 
+    }
+    
+    public Intersection IntersectionAtEnd 
+    {
+        get => _intersections[1];
+        set
+        {
+            _intersections[1] = value;
+            IsConnected = true;
+        } 
+    }
+    //public Intersection[] Intersections { get; } = new Intersection[2];
+
+    public StreetInfo Info { get; private set; }
 
     public float Length { get; private set; }
     public float Speed { get; private set; } = 50;
     public float Cost { get; private set; }
-
-    public float Thickness { get; private set; }
     
     public List<Vector3> edge1;
     public List<Vector3> edge2;
@@ -27,10 +60,16 @@ public class StreetSegment : MonoBehaviour
         name = "Street " + Counter++;
     }
 
-    public void Init(List<Vector3> points, float thickness)
+    private void OnDestroy()
+    {
+        _intersections[0]?.RemoveSegment(this);
+        _intersections[1]?.RemoveSegment(this);
+    }
+
+    public void Init(List<Vector3> points, StreetInfo info)
     {
         StreetPoints = points;
-        Thickness = thickness;
+        Info = info;
         
         edge1 = new List<Vector3>();
         edge2 = new List<Vector3>();
@@ -46,26 +85,26 @@ public class StreetSegment : MonoBehaviour
             laneOffset = (CalculateLaneOffset(i-1) + CalculateLaneOffset(i)).normalized;
             edge1.Add(points[i] - laneOffset);
             edge2.Add(points[points.Count - 1 - i] + laneOffset);
-            
-            Debug.Log(i);
         }
-        Debug.Log("Points: " + points.Count);
-        
+
         laneOffset = CalculateLaneOffset(points.Count - 2);
         edge1.Add(points[points.Count - 1] - laneOffset);
         edge2.Add(points[0] + laneOffset);
+
+        float length = (StreetPoints[1] - StreetPoints[0]).magnitude;
+        float offset = info.trackWidth * info.lanes;
+        
+        BuildingAreas[0] = Instantiate(GameManager.Instance.buildingAreaPrefab, transform).GetComponent<BuildingArea>();
+        BuildingAreas[0].Init(offset, length, this);
+
+        BuildingAreas[1] = Instantiate(GameManager.Instance.buildingAreaPrefab, transform).GetComponent<BuildingArea>();
+        BuildingAreas[1].Init(-offset, length, this);
     }
 
     private Vector3 CalculateLaneOffset(int index)
     {
-        Debug.Log(index + ", " + (index + 1));
-        
-        Vector2 dir2D = new Vector2(StreetPoints[index + 1].x - StreetPoints[index].x, StreetPoints[index + 1].z - StreetPoints[index].z).normalized;
-        Vector2 normal2D = Vector2.Perpendicular(dir2D);
-        Vector3 normal = new Vector3(normal2D.x, 0f, normal2D.y).normalized;
-        
-        //TODO anpassen: 0.25 da 2 lanes und jeweils mittig platzier
-        return Thickness * 0.25f * normal;
+        Vector3 normal = VectorUtil.GetNormal(StreetPoints[index], StreetPoints[index + 1]);
+        return Info.trackWidth * 0.5f * normal;
     }
 
     private void CalculateLength(List<Vector3> points)
@@ -83,31 +122,22 @@ public class StreetSegment : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        if (Intersections[0] == null && Intersections[1] == null)
+        if (!IsConnected)
         {
             Gizmos.color = Color.red;
             Gizmos.DrawCube(transform.position, Vector3.one);
         }
 
         Gizmos.color = Color.green;
-        foreach (Vector3 waypoint in edge1)
-        {
-            Gizmos.DrawCube(waypoint, new Vector3(0.2f, 1f, 0.2f));
-            Gizmos.color = Color.magenta;
-        }
+        Gizmos.DrawCube(edge1[edge1.Count - 1], new Vector3(0.2f, 1f, 0.2f));
+
         Gizmos.color = Color.blue;
+        Gizmos.DrawCube(edge2[edge2.Count - 1], new Vector3(0.2f, 1f, 0.2f));
         foreach (Vector3 waypoint in edge2)
-        {
-            Gizmos.DrawCube(waypoint, new Vector3(0.2f, 1f, 0.2f));
-            Gizmos.color = Color.yellow;
-        }
 
 #if UNITY_EDITOR
-        Handles.Label(transform.position, Intersections[0]?.name + ", " + Intersections[1]?.name + 
+        Handles.Label(transform.position, _intersections[0]?.name + ", " + _intersections[1]?.name + 
                                           "\nLength: " + Length + ", Speed: " + Speed +", Cost: " + Cost);
 #endif
-        
     }
-    
-    
 }

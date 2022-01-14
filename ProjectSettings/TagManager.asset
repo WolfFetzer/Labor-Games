@@ -15,9 +15,9 @@ TagManager:
   - Floor
   - PostProcessing
   - Not in Reflection
-  - 
-  - 
-  - 
+  - BuildingArea
+  - Selectable
+  - Intersection
   - 
   - 
   - 

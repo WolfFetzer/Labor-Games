@@ -1,118 +1,186 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
+using Streets;
 using UnityEngine;
+using Util;
 
 public class Intersection : MonoBehaviour
 {
-    private static int _counter;
+    private static int _idCounter;
 
-    //TODO entfernen
-    public static List<Intersection> Intersections = new List<Intersection>();
-
-    public int ID { get; private set; }
     public List<IntersectionEdge> Edges { get; } = new List<IntersectionEdge>();
+    
+    //public List<Vector3Tuple> SegmentStartingPoints { get; } = new List<Vector3Tuple>();
+    public List<Vector3Tuple> SegmentStartingPoints = new List<Vector3Tuple>();
+    
+    
+    public List<StreetSegment> Segments { get; } = new List<StreetSegment>();
 
-    //TODO richtig umsetzen nach debug
-    public void AddNeibhor(string nameOfObject, Intersection intersection, StreetSegment segment, List<Vector3> wayPoints)
+    private void Awake()
     {
-        Debug.Log( "Ausgelöst von " + nameOfObject + ", Edge von: " + name);
-        Edges.Add(new IntersectionEdge(intersection, segment, wayPoints));
-        
-        //TODO Entfernen
-        if (Edges.Count > 1)
+        name = $"Intersection {_idCounter++}";
+    }
+
+    private List<Vector3Tuple> ins = new List<Vector3Tuple>(); 
+    private List<Vector3Tuple> outs = new List<Vector3Tuple>(); 
+    
+    public void AddSegment(StreetSegment segment, StreetDirection direction)
+    {
+        if (direction == StreetDirection.Forward)
         {
-            string s = Edges.Count + ": ";
-            foreach (IntersectionEdge edge in Edges)
+            if (segment.IntersectionAtEnd != null)
             {
-                s += edge.ToString() + " || ";
+                Edges.Add(new IntersectionEdge(segment.IntersectionAtEnd, segment, segment.edge1));
+            }
+
+            SegmentStartingPoints.Add(new Vector3Tuple()
+            {
+                StartingPoint = segment.StreetPoints[0],
+                Direction = (segment.StreetPoints[1] - segment.StreetPoints[0]).normalized
+            });
+            
+            //
+            //
+            Vector3Tuple newIn = new Vector3Tuple()
+            {
+                StartingPoint = segment.edge2[segment.edge2.Count - 1],
+                Direction = (segment.edge2[segment.edge2.Count - 1] - segment.edge2[segment.edge2.Count - 2]).normalized
+            };
+            
+            ins.Add(newIn);
+            foreach (Vector3Tuple tuple in outs)
+            {
+                //_selectedStreetInfo.lanes * 2 * _selectedStreetInfo.trackWidth
+                wayPoints.Add(
+                    new List<Vector3>()
+                    {
+                        newIn.StartingPoint + 4f * newIn.Direction, 
+                        tuple.StartingPoint + 4f * tuple.Direction
+                    });
             }
             
-            Debug.Log(name + ": " + s);
+            outs.Add(new Vector3Tuple()
+            {
+                StartingPoint = segment.edge1[0],
+                Direction = (segment.edge1[0] - segment.edge1[1]).normalized
+            });
         }
+        else
+        {
+            if (segment.IntersectionAtStart != null)
+            {
+                Edges.Add(new IntersectionEdge(segment.IntersectionAtStart, segment, segment.edge2));
+            }
+            
+            SegmentStartingPoints.Add(new Vector3Tuple()
+            {
+                StartingPoint = segment.StreetPoints[segment.StreetPoints.Count - 1],
+                Direction = (segment.StreetPoints[segment.StreetPoints.Count - 2] - segment.StreetPoints[segment.StreetPoints.Count - 1]).normalized
+            });
+            //
+            //
+            Vector3Tuple newIn = new Vector3Tuple()
+            {
+                StartingPoint = segment.edge1[segment.edge1.Count - 1],
+                Direction = (segment.edge1[segment.edge1.Count - 1] - segment.edge1[segment.edge1.Count - 2]).normalized
+            };
+            
+            ins.Add(newIn);
+
+            foreach (Vector3Tuple tuple in outs)
+            {
+                wayPoints.Add(new List<Vector3>(){newIn.StartingPoint + 4f * newIn.Direction, tuple.StartingPoint + 4f * tuple.Direction});
+            }
+            
+            outs.Add(new Vector3Tuple()
+            {
+                StartingPoint = segment.edge2[0],
+                Direction = (segment.edge2[0] - segment.edge2[1]).normalized
+            });
+            //
+            //
+            //
+            /*
+            foreach (StreetSegment streetSegment in Segments)
+            {
+            
+            }
+            */
+            //
+            //
+            //
+            //
+            //
+        }
+
+        Segments.Add(segment);
     }
+    //
+    //
+    //
+    //
+    //
+    public List<List<Vector3>> wayPoints = new List<List<Vector3>>(); 
 
     public void RemoveNeighbor(Intersection intersection)
     {
-        //TODO Verbessern
+        Debug.Log("Remove");
+        
         for (int i = 0; i < Edges.Count; i++)
-        {
             if (Edges[i].Intersection == intersection)
             {
-                Debug.Log("Found: " + intersection.name);
                 Edges.RemoveAt(i);
+                //SegmentStartingPoints.RemoveAt(i);
                 return;
             }
-        }
-    }
-    
-    private void Awake()
-    {
-        ID = _counter;
-        name = "Intersection " + _counter++;
-        
-        Intersections.Add(this);
     }
 
+    public void RemoveSegment(StreetSegment segment)
+    {
+        Segments.Remove(segment);
+    }
+
+    public void UpdateMesh(Mesh mesh)
+    {
+        GetComponent<MeshFilter>().mesh = mesh;
+    }
+    
     private void OnDrawGizmos()
     {
-        Gizmos.color = Color.blue;
-        Gizmos.DrawSphere(transform.position, 1f);
-        
-        Vector3 pos1, pos2;
-        pos1 = transform.position;
+        Vector3 pos1 = transform.position;
         pos1.y += 0.1f;
-        
+
         foreach (IntersectionEdge intersectionEdge in Edges)
         {
             //Draw center line
             Gizmos.color = Color.red;
-            pos2 = intersectionEdge.Intersection.transform.position;
+            Vector3 pos2 = intersectionEdge.Intersection.transform.position;
             pos2.y += 0.1f;
             Gizmos.DrawLine(pos1, pos2);
-            
+
             //Draw waypoints
             Gizmos.color = Color.cyan;
-            for (int i = 0; i < intersectionEdge.wayPoints.Count - 1; i++)
+            for (int i = 0; i < intersectionEdge.WayPoints.Count - 1; i++)
             {
-                Gizmos.DrawLine(intersectionEdge.wayPoints[i], intersectionEdge.wayPoints[i+1]);
-                Gizmos.DrawSphere(intersectionEdge.wayPoints[i+1], 0.5f);
+                Gizmos.DrawLine(intersectionEdge.WayPoints[i], intersectionEdge.WayPoints[i + 1]);
+                Gizmos.DrawSphere(intersectionEdge.WayPoints[i + 1], 0.5f);
             }
         }
-    }
-}
 
-public class IntersectionEdge
-{
-    public Intersection Intersection { get; set; }
-    public StreetSegment Segment { get; private set; }
-    public List<Vector3> wayPoints;
-
-    public IntersectionEdge(Intersection intersection, StreetSegment segment, List<Vector3> wayPoints)
-    {
-        Intersection = intersection;
-        Segment = segment;
-        this.wayPoints = wayPoints;
-
-        string s = "";
-        foreach (Vector3 wayPoint in wayPoints)
+        Gizmos.color = Color.magenta;
+        foreach (List<Vector3> list in wayPoints)
         {
-            s += wayPoint + ", ";
+            foreach (Vector3 vector3 in list)
+            {
+                Gizmos.DrawSphere(vector3, 0.25f);
+            }
         }
-        
-        Debug.Log("Connected to: " + intersection.name+ " | " + s);
-    }
-
-    public override string ToString()
-    {
-        string s = Intersection.name + ": ";
-
-        foreach (Vector3 wayPoint in wayPoints)
+        foreach (List<Vector3> list in wayPoints)
         {
-            s += wayPoint + ", ";
+            for (int i = 0; i < list.Count - 1; i++)
+            {
+                Gizmos.DrawLine(list[i], list[i + 1]);
+            }
         }
-        
-        return s;
     }
 }

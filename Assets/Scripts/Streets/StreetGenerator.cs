@@ -1,55 +1,14 @@
 ﻿using System.Collections.Generic;
 using Curves.Util;
 using UnityEngine;
+using Util;
 
 namespace Streets
 {
     public static class StreetGenerator
     {
-        public static Mesh GenerateStraight(Vector3 start, Vector3 end)
+        public static GameObject GenerateStraightGameObject(Vector3 start, Vector3 end, StreetInfo info)
         {
-            Mesh mesh = new Mesh();
-
-            Vector3 direction = end - start;
-
-            float length = direction.magnitude;
-
-            Vector2 tangent2D = new Vector2(direction.x, direction.z);
-            Vector2 normal2D = Vector2.Perpendicular(tangent2D).normalized;
-            Vector3 normal = new Vector3(normal2D.x, 0f, normal2D.y);
-
-            Debug.Log("Normal length: " + normal2D.magnitude);
-
-            start.y += 0.1f;
-            end.y += 0.1f;
-
-            Vector3[] vertices = new Vector3[4];
-            int[] triangles = new int[6];
-
-            vertices[0] = start + normal;
-            vertices[1] = start - normal;
-            vertices[2] = end + normal;
-            vertices[3] = end - normal;
-
-            triangles[0] = 0;
-            triangles[1] = 3;
-            triangles[2] = 1;
-            triangles[3] = 0;
-            triangles[4] = 2;
-            triangles[5] = 3;
-
-            mesh.vertices = vertices;
-            mesh.triangles = triangles;
-
-            mesh.RecalculateNormals();
-            mesh.RecalculateBounds();
-
-            return mesh;
-        }
-
-        public static GameObject GenerateStraightGameObject(Vector3 start, Vector3 end)
-        {
-            float thickness = 3f;
             GameObject go = new GameObject {layer = 6};
 
             Vector3 direction = end - start;
@@ -57,11 +16,12 @@ namespace Streets
             float halfLength = length / 2f;
 
             Vector3 position = 0.5f * direction + start;
+            go.transform.parent = GameManager.Instance.streetTransform;
             go.transform.position = position;
             go.transform.localRotation = Quaternion.LookRotation(direction, Vector3.up);
 
             BoxCollider collider = go.AddComponent<BoxCollider>();
-            collider.size = new Vector3(thickness, 1f, length);
+            collider.size = new Vector3( info.lanes * 2 * info.trackWidth, 1f, length);
 
             MeshRenderer renderer = go.AddComponent<MeshRenderer>();
             renderer.sharedMaterial = GameManager.Instance.streetMaterial;
@@ -69,14 +29,14 @@ namespace Streets
             MeshFilter filter = go.AddComponent<MeshFilter>();
 
             StreetSegment segment = go.AddComponent<StreetSegment>();
-            segment.Init(new List<Vector3> {start, end}, thickness);
+            segment.Init(new List<Vector3> {start, end}, info);
 
             Mesh mesh = new Mesh();
 
             Vector3[] vertices = new Vector3[4];
             int[] triangles = new int[6];
             Vector2[] uvs = new Vector2[4];
-            float halfThickness = segment.Thickness * 0.5f;
+            float halfThickness = info.lanes * info.trackWidth;/* segment.Thickness * 0.5f;*/
 
             vertices[0] = new Vector3(-halfThickness, 0.01f, -halfLength);
             vertices[1] = new Vector3(halfThickness, 0.01f, -halfLength);
@@ -107,13 +67,14 @@ namespace Streets
             return go;
         }
 
-        public static GameObject GenerateComplexStreetGameObject(List<Vector3> points)
+        public static GameObject GenerateComplexStreetGameObject(List<Vector3> points, StreetInfo info)
         {
             int curveSteps = 5;
 
             Debug.Log("Generate Complex");
-            float thickness = 3f;
+
             GameObject go = new GameObject {layer = 6};
+            go.transform.parent = GameManager.Instance.streetTransform;
 
             Vector3 pos = points[0];
             pos.y = 0.01f;
@@ -124,7 +85,7 @@ namespace Streets
             MeshFilter filter = go.AddComponent<MeshFilter>();
 
             StreetSegment segment = go.AddComponent<StreetSegment>();
-            segment.Init(points, thickness);
+            segment.Init(points, info);
 
             Mesh mesh = new Mesh();
 
@@ -144,6 +105,88 @@ namespace Streets
             collider.sharedMesh = mesh;
 
             return go;
+        }
+
+        public static void GenerateIntersectionMesh(Intersection intersection)
+        {
+            Mesh mesh = new Mesh();
+            mesh.name = intersection.name + " Mesh";
+            List<Vector3> vertices = new List<Vector3>();
+            List<int> triangles = new List<int>();
+
+            Vector3 center = intersection.transform.position;
+            Vector3[] intersectionDirections = new Vector3[intersection.SegmentStartingPoints.Count];
+
+            int index = 0;
+            foreach (Vector3Tuple tuple in intersection.SegmentStartingPoints)
+            {
+                intersectionDirections[index++] = (tuple.StartingPoint - center).normalized;
+            }
+
+            //float intersectionHalfWidth = 1.5f;
+            
+            //Anglecheck
+            /*
+            if (Vector3.SignedAngle(-intersectionDirections[0], intersectionDirections[2], Vector3.up) < 0f)
+            {
+                Vector3 straightDirection = intersectionDirections[1];
+                intersectionDirections[1] = intersectionDirections[2];
+                intersectionDirections[2] = straightDirection;
+            }
+            */
+            StreetInfo info = intersection.Segments[0].Info;
+            
+            Vector3 firstDirection = intersectionDirections[0] * (info.lanes * info.trackWidth);
+                
+            Vector3 normal = new Vector3(-firstDirection.z, 0f, firstDirection.x);
+                
+            vertices.Add(new Vector3(-firstDirection.x + normal.x, 0.01f, -firstDirection.z + normal.z));
+            vertices.Add(new Vector3(firstDirection.x + normal.x, 0.01f, firstDirection.z + normal.z));
+            vertices.Add(new Vector3(-firstDirection.x - normal.x, 0.01f, -firstDirection.z - normal.z));
+            vertices.Add(new Vector3(firstDirection.x - normal.x, 0.01f, firstDirection.z - normal.z));
+
+            triangles.Add(0);
+            triangles.Add(1);
+            triangles.Add(3);
+            triangles.Add(0);
+            triangles.Add(3);
+            triangles.Add(2);
+            
+            int triangleIndex = 4;
+            for (int i = 0; i < intersectionDirections.Length; i++)
+            {
+                info = intersection.Segments[i].Info;
+
+                Vector3 direction = intersectionDirections[i] * (info.lanes * info.trackWidth);
+                normal = new Vector3(-direction.z, 0f, direction.x);
+
+                vertices.Add(new Vector3(direction.x + normal.x, 0.01f, direction.z + normal.z));
+                vertices.Add(new Vector3(direction.x - normal.x, 0.01f, direction.z - normal.z));
+
+                Vector3 streetDirection = intersection.SegmentStartingPoints[i].Direction * (info.lanes * info.trackWidth);
+                normal = new Vector3(-streetDirection.z, 0f, streetDirection.x);
+
+                vertices.Add(new Vector3(direction.x + streetDirection.x + normal.x, 0.01f, direction.z + streetDirection.z + normal.z));
+                vertices.Add(new Vector3(direction.x + streetDirection.x - normal.x, 0.01f, direction.z + streetDirection.z - normal.z));
+
+                triangles.Add(triangleIndex);
+                triangles.Add(triangleIndex + 3);
+                triangles.Add(triangleIndex + 1);
+                triangles.Add(triangleIndex);
+                triangles.Add(triangleIndex + 2);
+                triangles.Add(triangleIndex + 3);
+
+                triangleIndex += 4;
+            }
+
+
+            mesh.vertices = vertices.ToArray();
+            mesh.triangles = triangles.ToArray();
+            
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            
+            intersection.UpdateMesh(mesh);
         }
 
         private static Vector2[] CreateUvs(int pointAmount)
@@ -190,7 +233,7 @@ namespace Streets
         {
             float curveDistanceMultiplier = 4f;
             Vector3[] vertices = new Vector3[(points.Count - 1) * 4 + (points.Count - 2) * 2 * curveSteps];
-            float halfThickness = segment.Thickness * 0.5f;
+            float halfThickness = segment.Info.lanes * segment.Info.lanes; /*.Thickness * 0.5f;*/
             int vertIndex = 0;
 
             //Start points without inset
@@ -218,8 +261,8 @@ namespace Streets
 
                 for (int j = 0; j < curveSteps; j++)
                 {
-                    Vector3 point = MathUtil.QuadraticLerp(start, handle, end, time);
-                    normal = MathUtil.GetQuadraticBezierNormal(start, handle, end, time);
+                    Vector3 point = BezierUtil.QuadraticLerp(start, handle, end, time);
+                    normal = BezierUtil.GetQuadraticBezierNormal(start, handle, end, time);
 
                     vertices[vertIndex++] = point - points[0] + halfThickness * normal;
                     vertices[vertIndex++] = point - points[0] - halfThickness * normal;

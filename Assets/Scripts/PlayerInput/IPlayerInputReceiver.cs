@@ -4,10 +4,10 @@ namespace PlayerInput
 {
     public interface IPlayerInputReceiver
     {
-        void UpdateMousePosition(Camera camera);
+        void UpdateMousePosition();
 
-        void OnLeftMouseClicked(Camera camera);
+        void OnLeftMouseClicked();
     
-        void OnRightMouseClicked(Camera camera);
+        void OnRightMouseClicked();
     }
 }

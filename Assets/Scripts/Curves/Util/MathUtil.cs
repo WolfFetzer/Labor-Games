@@ -2,7 +2,7 @@
 
 namespace Curves.Util
 {
-    public static class MathUtil
+    public static class BezierUtil
     {
         public static Vector3 QuadraticLerp(Vector3 start, Vector3 handle, Vector3 end, float time)
         {

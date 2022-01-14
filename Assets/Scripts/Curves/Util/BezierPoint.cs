@@ -24,7 +24,7 @@ namespace Curves.Util
 
         private Vector3 GetPosition(Vector3 start, Vector3 handle, Vector3 end, float time)
         {
-            return MathUtil.QuadraticLerp(start, handle, end, time);
+            return BezierUtil.QuadraticLerp(start, handle, end, time);
             ;
         }
 
