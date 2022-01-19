@@ -9,7 +9,7 @@ namespace Buildings.BuildingArea
         [SerializeField] private int fieldWidth = 10;
 
         public int FieldAmount { get; private set; }
-        private AreaField[] _areaFields;
+        public AreaField[] AreaFields { get; set; }
         public StreetSegment StreetSegment { get; private set; }
         public bool IsRightSide { get; private set; }
 
@@ -29,9 +29,9 @@ namespace Buildings.BuildingArea
             
             transform.localPosition = new Vector3(sideShift, 0f, 0f);
             FieldAmount = (int) width / fieldWidth;
-            _areaFields = new AreaField[FieldAmount];
+            AreaFields = new AreaField[FieldAmount];
             
-            _collider.size = new Vector3(fieldDepth, 0.01f, _areaFields.Length * fieldWidth);
+            _collider.size = new Vector3(fieldDepth, 0.01f, AreaFields.Length * fieldWidth);
 
             float sideCorrectedDepth = fieldDepth;
 
@@ -42,11 +42,11 @@ namespace Buildings.BuildingArea
                 IsRightSide = false;
                 _meshFilter.mesh = CreateLeftSideMesh();
 
-                float startZ = _areaFields.Length / 2f * fieldWidth - fieldWidth * 0.5f;
-                for (int i = 0; i < _areaFields.Length; i++)
+                float startZ = AreaFields.Length / 2f * fieldWidth - fieldWidth * 0.5f;
+                for (int i = 0; i < AreaFields.Length; i++)
                 {
                     float z = startZ - i * fieldWidth;
-                    _areaFields[i] = new AreaField(new Vector3(0f, 0f, z), i, this);
+                    AreaFields[i] = new AreaField(new Vector3(0f, 0f, z), i, this);
                 }
             }
             else
@@ -55,11 +55,11 @@ namespace Buildings.BuildingArea
                 IsRightSide = true;
                 _meshFilter.mesh = CreateRightSideMesh();
 
-                float startZ = -_areaFields.Length / 2f * fieldWidth + fieldWidth * 0.5f;
-                for (int i = 0; i < _areaFields.Length; i++)
+                float startZ = -AreaFields.Length / 2f * fieldWidth + fieldWidth * 0.5f;
+                for (int i = 0; i < AreaFields.Length; i++)
                 {
                     float z = startZ + i * fieldWidth;
-                    _areaFields[i] = new AreaField(new Vector3(0f, 0f, z), i, this);
+                    AreaFields[i] = new AreaField(new Vector3(0f, 0f, z), i, this);
                 }
             }
 
@@ -106,7 +106,7 @@ namespace Buildings.BuildingArea
 
             mesh.uv = uvs;
 
-            _areaFields[pos].Type = type;
+            AreaFields[pos].Type = type;
         }
 
         private Mesh CreateRightSideMesh()
@@ -114,13 +114,13 @@ namespace Buildings.BuildingArea
             Mesh mesh = new Mesh();
             InitArrays(out Vector3[] vertices, out int[] triangles, out Vector2[] uvs);
 
-            float startZ = -_areaFields.Length / 2f * fieldWidth;
+            float startZ = -AreaFields.Length / 2f * fieldWidth;
 
             int index = 0;
             int triIndex = 0;
             int uvIndex = 0;
 
-            for (int i = 0; i < _areaFields.Length; i++)
+            for (int i = 0; i < AreaFields.Length; i++)
             {
                 float z = startZ + i * fieldWidth;
                 vertices[index++] = new Vector3(0f, 0.01f, z);
@@ -158,13 +158,13 @@ namespace Buildings.BuildingArea
             Mesh mesh = new Mesh();
             InitArrays(out Vector3[] vertices, out int[] triangles, out Vector2[] uvs);
 
-            float startZ = _areaFields.Length / 2f * fieldWidth;
+            float startZ = AreaFields.Length / 2f * fieldWidth;
 
             int index = 0;
             int triIndex = 0;
             int uvIndex = 0;
 
-            for (int i = 0; i < _areaFields.Length; i++)
+            for (int i = 0; i < AreaFields.Length; i++)
             {
                 float z = startZ - i * 10f;
                 vertices[index++] = new Vector3(0f, 0.01f, z);
@@ -199,9 +199,9 @@ namespace Buildings.BuildingArea
 
         private void InitArrays(out Vector3[] vertices, out int[] triangles, out Vector2[] uvs)
         {
-            vertices = new Vector3[_areaFields.Length * 4];
-            triangles = new int[_areaFields.Length * 6];
-            uvs = new Vector2[_areaFields.Length * 4];
+            vertices = new Vector3[AreaFields.Length * 4];
+            triangles = new int[AreaFields.Length * 6];
+            uvs = new Vector2[AreaFields.Length * 4];
         }
     }
 }

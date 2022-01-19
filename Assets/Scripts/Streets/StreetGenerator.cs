@@ -28,8 +28,9 @@ namespace Streets
 
             StreetSegment segment = go.AddComponent<StreetSegment>();
             segment.Init(new List<Vector3> {start, end}, info);
-
-            CreateStraightMesh(ref segment);
+            
+            MeshFilter filter = go.AddComponent<MeshFilter>();
+            CreateStraightMesh(ref segment, filter);
 
             if (length >= 10f)
             {
@@ -61,7 +62,7 @@ namespace Streets
             return Object.Instantiate(GameManager.Instance.streetLightPrefab, parent, false).transform;
         }
 
-        private static void CreateStraightMesh(ref StreetSegment segment)
+        private static void CreateStraightMesh(ref StreetSegment segment, MeshFilter filter)
         {
             Vector3[] vertices = new Vector3[4];
             int[] triangles = new int[6];
@@ -69,8 +70,7 @@ namespace Streets
             float halfLength = segment.Length / 2f;
             float uvPos = segment.Length * 0.001f / 2f;
             float halfThickness = segment.Info.lanes * segment.Info.trackWidth;
-
-            MeshFilter filter = segment.gameObject.AddComponent<MeshFilter>();
+            
             Mesh mesh = new Mesh();
 
             vertices[0] = new Vector3(-halfThickness, 0.01f, -halfLength);
