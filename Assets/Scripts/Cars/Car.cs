@@ -9,7 +9,7 @@ using UnityEngine;
 
 public class Car : MonoBehaviour
 {
-    [SerializeField] private Human driver;
+    public Human Driver { get; private set; }
 
     private Vector3 _direction;
     private bool _hasTarget;
@@ -72,8 +72,8 @@ public class Car : MonoBehaviour
             else
             {
                 _hasTarget = false;
-                _target.EnterBuilding(driver);
-                driver.CurrentPosition = _target;
+                _target.EnterBuilding(Driver);
+                Driver.CurrentPosition = _target;
                 Destroy(gameObject);
                 return;
             }
@@ -167,7 +167,7 @@ public class Car : MonoBehaviour
     public void Move(PathNode node, Building target, Human driver)
     {
         _target = target;
-        this.driver = driver;
+        Driver = driver;
         _stack = node.GetWaypoints();
         targetDistance = float.MaxValue;
         _hasTarget = true;
