@@ -23,7 +23,7 @@ public enum RaycastHitInfo
 public class ConstructionManager
 {
     //Min Distance to the edge before snapping and being handled as addition
-    private const float MinEdgeDistance = 5f;
+    private const float MinEdgeDistance = 8f;
 
     private readonly StreetPreview _cursorStreetPreview;
     private readonly Transform _cursorTransform;
@@ -121,7 +121,6 @@ public class ConstructionManager
         }
     }
 
-    
     #region Mouse Position Update
 
     private void HandleFloorUpdate(RaycastHit hit)
@@ -220,7 +219,6 @@ public class ConstructionManager
 
     #endregion
 
-    
     #region Left Mouse Input
 
     private void HandleFloorPlacement(RaycastHit hit)
@@ -354,7 +352,6 @@ public class ConstructionManager
     
     #endregion
 
-    
     #region Util
 
     private void GenerateStraightStreet(Vector3 start, Vector3 end, Intersection startIntersection, Intersection endIntersection)
@@ -480,6 +477,7 @@ public class ConstructionManager
         List<Vector3> points = segment.StreetPoints;
         Vector3 intersectionPoint;
 
+        //Not needed at the moment
         //Points have to be sorted if it's not a straight street
         if (points.Count > 2)
         {
@@ -579,14 +577,16 @@ public class ConstructionManager
             );
         }
 
-        if (Vector3.Distance(segment.StreetPoints[0], intersectionPoint) <= MinEdgeDistance)
+        //Check if close enough to the edge
+        float distanceA = Vector3.Distance(segment.StreetPoints[0], intersectionPoint);
+        float distanceB = Vector3.Distance(segment.StreetPoints[segment.StreetPoints.Count - 1], intersectionPoint);
+
+        if (distanceA < distanceB && distanceA <= MinEdgeDistance)
         {
             placementMode = PlacementMode.AdditionAtTheBeginning;
             return segment.StreetPoints[0];
         }
-
-        if (Vector3.Distance(segment.StreetPoints[segment.StreetPoints.Count - 1], intersectionPoint) <=
-            MinEdgeDistance)
+        if (distanceB <= MinEdgeDistance)
         {
             placementMode = PlacementMode.AdditionAtTheEnd;
             return segment.StreetPoints[segment.StreetPoints.Count - 1];

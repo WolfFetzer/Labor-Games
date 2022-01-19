@@ -32,6 +32,7 @@ namespace Streets
             MeshFilter filter = go.AddComponent<MeshFilter>();
             CreateStraightMesh(ref segment, filter);
 
+            //Create Street lights
             if (length >= 10f)
             {
                 int amount = (int) (length * 0.5f / 10f);

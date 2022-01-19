@@ -26,8 +26,6 @@ namespace Streets
         public StreetSegment Segment { get; }
 
 
-        
-
         public Lane(List<Vector3> wayPoints, StreetSegment segment)
         {
             _id = IdCounter++;

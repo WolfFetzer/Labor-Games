@@ -13,7 +13,6 @@ public class DayNightCycle : MonoBehaviour
     {
         _transform = transform;
         _transform.rotation = Quaternion.Euler(0.25f * TimeManager.Instance.GameTime.MinuteOfDay - 90f, 0f, 0f);
-        //CheckTime();
         TimeManager.Instance.Register(TimeUpdate);
         TimeManager.Instance.RegisterForDayNightUpdate(OnDayTime, OnNightTime);
         if (TimeManager.Instance.GameTime.DayNightStatus == DayNightType.Day) OnDayTime(); 
@@ -40,7 +39,7 @@ public class DayNightCycle : MonoBehaviour
     private void OnDisable()
     {
         TimeManager.Instance?.Unregister(TimeUpdate);
-        TimeManager.Instance.UnregisterForDayNightUpdate(OnDayTime, OnNightTime);
+        TimeManager.Instance?.UnregisterForDayNightUpdate(OnDayTime, OnNightTime);
     }
 }
 
