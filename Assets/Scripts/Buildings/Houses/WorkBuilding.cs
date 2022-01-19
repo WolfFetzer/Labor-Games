@@ -58,11 +58,6 @@ namespace Buildings.Houses
             presentWorkers.Clear();
         }
 
-        private void OnDisable()
-        {
-            CloseWorkBuilding();
-        }
-        
         protected void CloseWorkBuilding()
         {
             TimeManager.Instance.RemoveTimedTask(_endWorkTask);
@@ -80,7 +75,7 @@ namespace Buildings.Houses
         {
             workers.Add(human);
             human.Workplace = this;
-            Debug.Log("[WorkBuilding] Employed: " + human);
+            //Debug.Log("[WorkBuilding] Employed: " + human);
         }
     }
 }

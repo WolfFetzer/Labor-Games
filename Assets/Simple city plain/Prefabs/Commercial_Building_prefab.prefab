@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 4854950424086454}
   - component: {fileID: 33976223685111332}
   - component: {fileID: 23521377195621546}
+  - component: {fileID: 1628088454835792386}
   m_Layer: 0
   m_Name: Shop_B
   m_TagString: Untagged
@@ -96,6 +97,28 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &1628088454835792386
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1184142013480454}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b56da36e2c110b43b95d0f59dc131c2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  MaterialSlots:
+  - index: 4
+    materialWithoutLight: {fileID: 2100000, guid: 26df91506bf83b343b8083c5322323ae, type: 2}
+    materialWithLight: {fileID: 2100000, guid: d7636558dbd50f7429a53d5bc6352a44, type: 2}
+  - index: 6
+    materialWithoutLight: {fileID: 2100000, guid: 26df91506bf83b343b8083c5322323ae, type: 2}
+    materialWithLight: {fileID: 2100000, guid: 763d547f29cebc443a26da20545010dd, type: 2}
+  - index: 8
+    materialWithoutLight: {fileID: 2100000, guid: 26df91506bf83b343b8083c5322323ae, type: 2}
+    materialWithLight: {fileID: 2100000, guid: d7636558dbd50f7429a53d5bc6352a44, type: 2}
 --- !u!1 &1213795830858570
 GameObject:
   m_ObjectHideFlags: 0
@@ -159,14 +182,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b1425f05233d47c8bb3a41c36d2356f9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  target: {fileID: 0}
   update: 0
   maxWorkers: 6
   workers: []
   presentWorkers: []
-  startHour: 10
-  startMinute: 30
-  endHour: 0
 --- !u!1001 &952025136007056916
 PrefabInstance:
   m_ObjectHideFlags: 0

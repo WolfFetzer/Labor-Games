@@ -59,14 +59,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 772c308814ab497ca6c1f5dd7cf62920, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  target: {fileID: 0}
   update: 0
   maxWorkers: 6
   workers: []
   presentWorkers: []
-  startHour: 10
-  startMinute: 30
-  endHour: 0
 --- !u!1 &1945057450944616
 GameObject:
   m_ObjectHideFlags: 0
@@ -78,6 +74,7 @@ GameObject:
   - component: {fileID: 4813206641914160}
   - component: {fileID: 33244346602585646}
   - component: {fileID: 23137990866090778}
+  - component: {fileID: 5979480253760264150}
   m_Layer: 0
   m_Name: Building_A1
   m_TagString: Untagged
@@ -157,6 +154,25 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &5979480253760264150
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1945057450944616}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b56da36e2c110b43b95d0f59dc131c2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  MaterialSlots:
+  - index: 2
+    materialWithoutLight: {fileID: 2100000, guid: 26df91506bf83b343b8083c5322323ae, type: 2}
+    materialWithLight: {fileID: 2100000, guid: d7636558dbd50f7429a53d5bc6352a44, type: 2}
+  - index: 5
+    materialWithoutLight: {fileID: 2100000, guid: 26df91506bf83b343b8083c5322323ae, type: 2}
+    materialWithLight: {fileID: 2100000, guid: 763d547f29cebc443a26da20545010dd, type: 2}
 --- !u!1001 &1320291495833517500
 PrefabInstance:
   m_ObjectHideFlags: 0

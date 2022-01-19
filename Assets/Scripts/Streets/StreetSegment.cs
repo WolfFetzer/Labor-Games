@@ -1,59 +1,28 @@
 using System;
 using System.Collections.Generic;
 using Buildings.BuildingArea;
-//TODO entfernen
-#if UNITY_EDITOR
-    using UnityEditor;
-#endif
+using Streets;
 using UnityEngine;
 using Util;
 
-/// <summary>
-/// Forward means that the streetpoint direction is ascending, backwards decending
-/// </summary>
-public enum StreetDirection
-{
-    Forward, Backward
-}
 
 public class StreetSegment : MonoBehaviour
 {
-    public static int Counter;
+    private static int Counter;
     public List<Vector3> StreetPoints { get; private set; }
 
     public BuildingArea[] BuildingAreas { get; set; } = new BuildingArea[2];
 
-    public bool IsConnected { get; private set; }
-    private Intersection[] _intersections = new Intersection[2];
-    public Intersection IntersectionAtStart
-    {
-        get => _intersections[0];
-        set
-        {
-            _intersections[0] = value;
-            IsConnected = true;
-        } 
-    }
-    
-    public Intersection IntersectionAtEnd 
-    {
-        get => _intersections[1];
-        set
-        {
-            _intersections[1] = value;
-            IsConnected = true;
-        } 
-    }
-    //public Intersection[] Intersections { get; } = new Intersection[2];
-
+    public bool IsConnected => Lane1.IsConnected || Lane2.IsConnected;
     public StreetInfo Info { get; private set; }
 
     public float Length { get; private set; }
     public float Speed { get; private set; } = 50;
     public float Cost { get; private set; }
+
+    public Lane Lane1 { get; private set; }
+    public Lane Lane2 { get; private set; }
     
-    public List<Vector3> edge1;
-    public List<Vector3> edge2;
     
     private void Awake()
     {
@@ -62,8 +31,8 @@ public class StreetSegment : MonoBehaviour
 
     private void OnDestroy()
     {
-        _intersections[0]?.RemoveSegment(this);
-        _intersections[1]?.RemoveSegment(this);
+        if(Lane1.IsConnected) Lane1.Intersection.RemoveLane(Lane2);
+        if(Lane2.IsConnected) Lane2.Intersection.RemoveLane(Lane1);
     }
 
     public void Init(List<Vector3> points, StreetInfo info)
@@ -71,8 +40,8 @@ public class StreetSegment : MonoBehaviour
         StreetPoints = points;
         Info = info;
         
-        edge1 = new List<Vector3>();
-        edge2 = new List<Vector3>();
+        List<Vector3> edge1 = new List<Vector3>();
+        List<Vector3> edge2 = new List<Vector3>();
 
         CalculateLength(points);
         
@@ -90,6 +59,9 @@ public class StreetSegment : MonoBehaviour
         laneOffset = CalculateLaneOffset(points.Count - 2);
         edge1.Add(points[points.Count - 1] - laneOffset);
         edge2.Add(points[0] + laneOffset);
+
+        Lane1 = new Lane(edge1, this);
+        Lane2 = new Lane(edge2, this);
 
         float length = (StreetPoints[1] - StreetPoints[0]).magnitude;
         float offset = info.trackWidth * info.lanes;
@@ -115,9 +87,7 @@ public class StreetSegment : MonoBehaviour
             Length += Vector3.Distance(points[i], points[i + 1]);
         }
 
-        //TODO Maßstab festlegen und eingeben
-        Length *= 10f;
-        Cost = Length / Speed;
+        Cost = Length * 10f / Speed;
     }
 
     private void OnDrawGizmos()
@@ -129,15 +99,9 @@ public class StreetSegment : MonoBehaviour
         }
 
         Gizmos.color = Color.green;
-        Gizmos.DrawCube(edge1[edge1.Count - 1], new Vector3(0.2f, 1f, 0.2f));
+        Gizmos.DrawCube(Lane1.WayPoints[Lane1.WayPoints.Count - 1], new Vector3(0.2f, 1f, 0.2f));
 
         Gizmos.color = Color.blue;
-        Gizmos.DrawCube(edge2[edge2.Count - 1], new Vector3(0.2f, 1f, 0.2f));
-        foreach (Vector3 waypoint in edge2)
-
-#if UNITY_EDITOR
-        Handles.Label(transform.position, _intersections[0]?.name + ", " + _intersections[1]?.name + 
-                                          "\nLength: " + Length + ", Speed: " + Speed +", Cost: " + Cost);
-#endif
+        Gizmos.DrawCube(Lane2.WayPoints[Lane2.WayPoints.Count - 1], new Vector3(0.2f, 1f, 0.2f));
     }
 }

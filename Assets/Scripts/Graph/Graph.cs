@@ -16,27 +16,24 @@ public class Graph : MonoBehaviour
         {
             foreach (var edge in node.Edges)
             {
-                Handles.color = Color.yellow;
-                Handles.DrawAAPolyLine(node.GetPosition(), edge.Node.GetPosition());
-                Handles.Label(node.GetPosition() + 0.5f * (edge.Node.GetPosition() - node.GetPosition()),
-                    "" + edge.Distance + ", Cost: " + edge.Cost + ", Speed: " + edge.Speed);
+                //Handles.color = Color.yellow;
+                //Handles.DrawAAPolyLine(node.GetPosition(), edge.Node.GetPosition());
+                //Handles.Label(node.GetPosition() + 0.5f * (edge.Node.GetPosition() - node.GetPosition()),"" + edge.Distance + ", Cost: " + edge.Cost + ", Speed: " + edge.Speed);
             }
 
-            Handles.color = Color.black;
-            Handles.DrawSolidDisc(node.GetPosition(), Vector3.up, 1f);
+            //Handles.color = Color.black;
+            //Handles.DrawSolidDisc(node.GetPosition(), Vector3.up, 1f);
 
-            Handles.color = Color.black;
-            Handles.Label(node.GetPosition(),
-                "Index: " + node.index + "\ngCost: " + node.gCost + "\nfCost: " + node.fCost + "\nhCost: " +
-                node.hCost);
+            //Handles.color = Color.black;
+            //Handles.Label(node.GetPosition(),"Index: " + node.index + "\ngCost: " + node.gCost + "\nfCost: " + node.fCost + "\nhCost: " +node.hCost);
         }
 
         var way = graph.way;
 
         while (way.parent != null)
         {
-            Handles.color = Color.green;
-            Handles.DrawAAPolyLine(10f, way.GetPosition(), way.parent.GetPosition());
+            //Handles.color = Color.green;
+            //Handles.DrawAAPolyLine(10f, way.GetPosition(), way.parent.GetPosition());
 
             way = way.parent;
         }

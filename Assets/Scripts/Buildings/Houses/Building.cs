@@ -10,9 +10,6 @@ public abstract class Building : MonoBehaviour
 {
     public AreaField Field { get; set; }
 
-    
-    public bool update = false;
-
     public abstract void EnterBuilding(Human human);
     public abstract void LeaveBuilding(Human human);
 }

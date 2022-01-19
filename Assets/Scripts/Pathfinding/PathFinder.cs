@@ -25,21 +25,21 @@ public static class PathFinder
         PathNode targetNode;
         bool tookFirst = false;
 
-        if (segment.IntersectionAtStart != null)
+        if (segment.Lane1.IsConnected)
         {
-            targetNode = new PathNode(segment.IntersectionAtStart);
+            targetNode = new PathNode(segment.Lane1);
             tookFirst = true;
         }
-        else if (segment.IntersectionAtEnd != null)
+        else if (segment.Lane2.IsConnected)
         {
-            targetNode = new PathNode(segment.IntersectionAtEnd);
+            targetNode = new PathNode(segment.Lane2);
         }
         else return null;
 
         PathNode path = CalculateShortestPath(startingPathNode, targetNode);
         
         //Check if went one intersection to far
-        if (tookFirst && segment.IntersectionAtEnd != null && path.Parent.Intersection == segment.IntersectionAtEnd)
+        if (tookFirst && segment.Lane2.IsConnected && path.Parent != null && path.Parent.Edge.Intersection == segment.Lane2.Intersection)
         {
             path = path.Parent;
         }
@@ -82,48 +82,46 @@ public static class PathFinder
             }
         }
 
-        return new PathNode(null) {Edge = new IntersectionEdge(null, start.Field.Parent.StreetSegment, waypoints)};
+        
+        return new PathNode(waypoints, start.Field.Parent.StreetSegment.Lane1);
     }
 
     private static PathNode GetStartingPathNode(Building start)
     {
-        Intersection intersection;
+        Lane edge;
         StreetSegment segment = start.Field.Parent.StreetSegment;
         List<Vector3> startingPoints;
         Transform startTransform = start.transform;
 
         if (start.Field.Parent.IsRightSide)
         {
-            if (segment.IntersectionAtEnd != null)
+            if (segment.Lane1.IsConnected)
             {
-                intersection = segment.IntersectionAtEnd;
+                edge = segment.Lane1;
                 startingPoints = GetBuildingExitPointsWithoutCrossing(startTransform, segment);
-                startingPoints.Add(segment.edge1[segment.edge1.Count - 1]);
             }
             else
             {
-                intersection = segment.IntersectionAtStart;
+                edge = segment.Lane2;
                 startingPoints = GetBuildingExitPointsWithCrossing(startTransform, segment);
-                startingPoints.Add(segment.edge2[segment.edge2.Count - 1]);
             }
         }
         else
         {
-            if (segment.IntersectionAtStart != null)
+            if (segment.Lane2.IsConnected)
             {
-                intersection = segment.IntersectionAtStart;
+                edge = segment.Lane2;
                 startingPoints = GetBuildingExitPointsWithoutCrossing(startTransform, segment);
-                startingPoints.Add(segment.edge2[segment.edge2.Count - 1]);
             }
             else
             {
-                intersection = segment.IntersectionAtEnd;
+                edge = segment.Lane1;
                 startingPoints = GetBuildingExitPointsWithCrossing(startTransform, segment);
-                startingPoints.Add(segment.edge1[segment.edge1.Count - 1]);
             }
         }
         
-        return new PathNode(intersection) {Edge = new IntersectionEdge(intersection, segment, startingPoints)};
+        startingPoints.Add(edge.WayPoints[edge.WayPoints.Count - 1]);
+        return new PathNode(startingPoints, edge);
     }
 
     private static List<Vector3> GetBuildingExitPointsWithoutCrossing(Transform transform, StreetSegment segment)
@@ -151,12 +149,12 @@ public static class PathFinder
         Transform targetTransform = target.transform;
         List<Vector3> lastPoints = new List<Vector3>();
 
-        Vector3 intersectionPosition = pathNode.Intersection.transform.position;
+        Vector3 intersectionPosition = pathNode.Edge.Intersection.transform.position;
         StreetSegment segment = target.Field.Parent.StreetSegment;
         
-        if (Vector3.Distance(intersectionPosition, segment.edge1[0]) < Vector3.Distance(intersectionPosition, segment.edge2[0]))
+        if (Vector3.Distance(intersectionPosition, segment.Lane1.WayPoints[0]) < Vector3.Distance(intersectionPosition, segment.Lane2.WayPoints[0]))
         {
-            lastPoints.Add(segment.edge1[0]);
+            lastPoints.Add(segment.Lane1.WayPoints[0]);
             
             if (target.Field.Parent.IsRightSide)
             {
@@ -169,7 +167,7 @@ public static class PathFinder
         }
         else
         {
-            lastPoints.Add(segment.edge2[0]);
+            lastPoints.Add(segment.Lane2.WayPoints[0]);
             
             if (target.Field.Parent.IsRightSide)
             {
@@ -181,7 +179,7 @@ public static class PathFinder
             }
         }
 
-        return new PathNode(null) {Edge = new IntersectionEdge(null, target.Field.Parent.StreetSegment, lastPoints)};
+        return new PathNode(lastPoints, segment.Lane1);
     }
 
     private static void AddBuildingEnterPointsWithoutCrossing(ref List<Vector3> listToAddTo, Transform target, StreetSegment segment)
@@ -222,22 +220,23 @@ public static class PathFinder
             
             openList.Remove(currentNode);
             
-            if (!closedDict.ContainsKey(currentNode.Intersection))
+            if (!closedDict.ContainsKey(currentNode.Edge.Intersection))
             {
-                closedDict.Add(currentNode.Intersection, true);
+                closedDict.Add(currentNode.Edge.Intersection, true);
             }
 
             //Found
-            if (currentNode.Intersection == target.Intersection)
+            if (currentNode.Edge.Intersection == target.Edge.Intersection)
             {
                 return currentNode;
             }
 
-            foreach (IntersectionEdge edge in currentNode.Intersection.Edges)
+            foreach (Lane edge in currentNode.Edge.Intersection.Edges)
             {
+                if(!edge.IsConnected) continue;
                 if (closedDict.ContainsKey(edge.Intersection)) continue;
 
-                PathNode node  = new PathNode(edge.Intersection);
+                PathNode node  = new PathNode(edge);
                 float newPath = currentNode.gCost + edge.Segment.Cost;
                 
                 node.CalculateHCost(target);

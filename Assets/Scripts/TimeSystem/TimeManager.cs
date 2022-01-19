@@ -10,15 +10,17 @@ using Util;
 public class TimeManager : Singleton<TimeManager>
 {
     private bool _isPaused = true;
-    public GameTime GameTime { get; } = new GameTime();
+    public GameTime GameTime { get; } = new GameTime(0, 0, 0, OnDayNightStatusChanged);
 
     private Action OnTimeChanged;
-    private Action<float> OnSpeedChanged;
+    private Action OnDayTime;
+    private Action OnNightTime;
 
     private float _realTimeRatio = 0.5f;
     private float _currentTimeProgression;
 
     private SortedSet<TimedTask> scheduledTasks = new SortedSet<TimedTask>();
+    
 
     public void SetSpeed(TimeSpeed timeSpeed)
     {
@@ -37,7 +39,8 @@ public class TimeManager : Singleton<TimeManager>
                 Car.SpeedMultiplier = 4f;
                 break;
             case TimeSpeed.FourTimes:
-                _realTimeRatio = 0.125f;
+                //Higher than normal to show day/night-cycle _realTimeRatio = 0.125f;
+                _realTimeRatio = 0.0125f;
                 Car.SpeedMultiplier = 8f;
                 break;
         }
@@ -72,7 +75,6 @@ public class TimeManager : Singleton<TimeManager>
 
     public void AddTimedTask(TimedTask task)
     {
-        Debug.Log("Added Task. Time at " + task.GameTime);
         scheduledTasks.Add(task);
     }
 
@@ -89,6 +91,30 @@ public class TimeManager : Singleton<TimeManager>
     public void Unregister(Action action)
     {
         OnTimeChanged -= action;
+    }
+
+    private static void OnDayNightStatusChanged()
+    {
+        if (Instance.GameTime.DayNightStatus == DayNightType.Day)
+        {
+            Instance.OnDayTime?.Invoke();
+        }
+        else
+        {
+            Instance.OnNightTime?.Invoke();
+        }
+    }
+
+    public void RegisterForDayNightUpdate(Action onDayTime, Action onNightTime)
+    {
+        OnDayTime += onDayTime;
+        OnNightTime += onNightTime;
+    }
+    
+    public void UnregisterForDayNightUpdate(Action onDayTime, Action onNightTime)
+    {
+        OnDayTime -= onDayTime;
+        OnNightTime -= onNightTime;
     }
 }
 

@@ -11,11 +11,12 @@ using Random = UnityEngine.Random;
 public class PopulationManager : Singleton<PopulationManager>
 {
     public int Population { get; private set; }
-    public int NeededResidents { get; private set; } = 100;
+    public int NeededResidents { get; set; } = 100;
     public int CommerceJobs { get; private set; }
-    public int NeededCommerceJobs { get; private set; }
+    public int NeededCommerceJobs { get; set; }
     public int IndustrialJobs { get; private set; }
-    public int NeededIndustrialJobs { get; private set; }
+    public int NeededIndustrialJobs { get; set; }
+    public int UnemployedPeople => _unemployed.Count;
 
     private readonly Queue<ResidentialBuilding> _residentialBuildingsWithSpace = new Queue<ResidentialBuilding>();
     private readonly Queue<AreaField> _freeResidentialFields = new Queue<AreaField>();
@@ -30,6 +31,8 @@ public class PopulationManager : Singleton<PopulationManager>
     private readonly Queue<Human> _unemployed = new Queue<Human>();
 
     private readonly Queue<Human> _idleHumans = new Queue<Human>();
+
+    public Action OnPopulationChanged { get; set; }
     
     private void Start()
     {
@@ -40,7 +43,7 @@ public class PopulationManager : Singleton<PopulationManager>
     {
         TimeManager.Instance?.Unregister(TimeUpdate);
     }
-    
+
     private void TimeUpdate()
     {
         if (NeededResidents > 0)
@@ -55,13 +58,18 @@ public class PopulationManager : Singleton<PopulationManager>
         {
             HandleCommercialBuildings();
         }
-        
-        if (_idleHumans.Count > 0 && Random.value > 0.96f)
+
+        bool success;
+        do
         {
-            Debug.Log("Go to random Shopping");
-            Human human = _idleHumans.Dequeue();
-            human.DriveShopping();
-        }
+            if (_idleHumans.Count > 0 && Random.value > 0.96f)
+            {
+                Human human = _idleHumans.Dequeue();
+                human.DriveShopping();
+                success = true;
+            }
+            else success = false;
+        } while (success);
     }
 
     private void HandleResidentialBuildings()
@@ -83,18 +91,18 @@ public class PopulationManager : Singleton<PopulationManager>
 
         Human human = HumanGenerator.GenerateHuman();
         building.MoveIn(human);
+        Population++;
         if (building.HasSpace) _residentialBuildingsWithSpace.Enqueue(building);
-        NeededResidents--;
-        NeededIndustrialJobs++;
-        NeededCommerceJobs++;
-        
+
         AddUnemployed(human);
+        
+        OnPopulationChanged?.Invoke();
     }
 
     private void HandleIndustrialBuildings()
     {
         IndustrialBuilding building = null;
-        if (_industrialBuildingsWithWorkSpace.Count > 0 && NeededIndustrialJobs >= NeededCommerceJobs)
+        if (_industrialBuildingsWithWorkSpace.Count > 0)
         {
             building = _industrialBuildingsWithWorkSpace.Dequeue();
         }
@@ -110,14 +118,17 @@ public class PopulationManager : Singleton<PopulationManager>
             
         building.Employ(RemoveUnemployed());
         if (building.HasWork) _industrialBuildingsWithWorkSpace.Enqueue(building);
+        IndustrialJobs++;
         NeededResidents++;
         NeededIndustrialJobs--;
+        
+        OnPopulationChanged?.Invoke();
     }
     
     private void HandleCommercialBuildings()
     {
         CommercialBuilding building = null;
-        if (_commercialBuildingsWithWorkSpace.Count > 0 && NeededCommerceJobs >= NeededIndustrialJobs)
+        if (_commercialBuildingsWithWorkSpace.Count > 0)
         {
             building = _commercialBuildingsWithWorkSpace.Dequeue();
         }
@@ -133,8 +144,11 @@ public class PopulationManager : Singleton<PopulationManager>
             
         building.Employ(RemoveUnemployed());
         if (building.HasWork) _commercialBuildingsWithWorkSpace.Enqueue(building);
+        CommerceJobs++;
         NeededResidents++;
         NeededCommerceJobs--;
+        
+        OnPopulationChanged?.Invoke();
     }
 
     public void AddIdleHuman(Human human)

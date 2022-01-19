@@ -277,6 +277,16 @@ namespace Population
             {
                 human = new Human(GetMaleName(), GetLastName(), GetAge(), Gender.Male);
             }
+            if (Random.value > 0.5f)
+            {
+                PopulationManager.Instance.NeededCommerceJobs++;
+            }
+            else
+            {
+                PopulationManager.Instance.NeededIndustrialJobs++;
+            }
+
+            PopulationManager.Instance.NeededResidents--;
 
             return human;
         }

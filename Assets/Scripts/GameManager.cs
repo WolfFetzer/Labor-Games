@@ -11,6 +11,8 @@ public class GameManager : Singleton<GameManager>
     public GameObject prefab;
     public GameObject streetCursorPrefab;
     public GameObject intersectionPrefab;
+    public GameObject trafficLightPrefab;
+    public GameObject streetLightPrefab;
     public GameObject carPrefab;
 
     public GameObject buildingAreaPrefab;

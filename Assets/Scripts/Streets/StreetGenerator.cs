@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Curves.Util;
+using Unity.VisualScripting;
 using UnityEngine;
 using Util;
 
@@ -13,7 +14,6 @@ namespace Streets
 
             Vector3 direction = end - start;
             float length = direction.magnitude;
-            float halfLength = length / 2f;
 
             Vector3 position = 0.5f * direction + start;
             go.transform.parent = GameManager.Instance.streetTransform;
@@ -26,17 +26,52 @@ namespace Streets
             MeshRenderer renderer = go.AddComponent<MeshRenderer>();
             renderer.sharedMaterial = GameManager.Instance.streetMaterial;
 
-            MeshFilter filter = go.AddComponent<MeshFilter>();
-
             StreetSegment segment = go.AddComponent<StreetSegment>();
             segment.Init(new List<Vector3> {start, end}, info);
 
-            Mesh mesh = new Mesh();
+            CreateStraightMesh(ref segment);
 
+            if (length >= 10f)
+            {
+                int amount = (int) (length * 0.5f / 10f);
+
+                float offset = 5f;
+                Vector3 offsetPos = new Vector3(info.trackWidth, 0f, 0f);
+
+                for (int i = 0; i < amount; i++)
+                {
+                    Transform t = InstantiateLight(go.transform);
+                    offsetPos.z = offset;
+                    t.localPosition = offsetPos;
+                    t.localRotation = Quaternion.Euler(0f, 90f, 0f);
+                    offsetPos.z = -offset;
+                    t = InstantiateLight(go.transform);
+                    t.localPosition = offsetPos;
+                    t.localRotation = Quaternion.Euler(0f, 90f, 0f);
+
+                    offset += 10f;
+                }
+            }
+
+            return go;
+        }
+
+        private static Transform InstantiateLight(Transform parent)
+        {
+            return Object.Instantiate(GameManager.Instance.streetLightPrefab, parent, false).transform;
+        }
+
+        private static void CreateStraightMesh(ref StreetSegment segment)
+        {
             Vector3[] vertices = new Vector3[4];
             int[] triangles = new int[6];
             Vector2[] uvs = new Vector2[4];
-            float halfThickness = info.lanes * info.trackWidth;/* segment.Thickness * 0.5f;*/
+            float halfLength = segment.Length / 2f;
+            float uvPos = segment.Length * 0.001f / 2f;
+            float halfThickness = segment.Info.lanes * segment.Info.trackWidth;
+
+            MeshFilter filter = segment.gameObject.AddComponent<MeshFilter>();
+            Mesh mesh = new Mesh();
 
             vertices[0] = new Vector3(-halfThickness, 0.01f, -halfLength);
             vertices[1] = new Vector3(halfThickness, 0.01f, -halfLength);
@@ -50,10 +85,10 @@ namespace Streets
             triangles[4] = 2;
             triangles[5] = 3;
 
-            uvs[0] = new Vector2(0, 0);
-            uvs[1] = new Vector2(1, 0);
-            uvs[2] = new Vector2(0, 1);
-            uvs[3] = new Vector2(1, 1);
+            uvs[0] = new Vector2(0, 0.5f - uvPos);
+            uvs[1] = new Vector2(1, 0.5f - uvPos);
+            uvs[2] = new Vector2(0, 0.5f + uvPos);
+            uvs[3] = new Vector2(1, 0.5f + uvPos);
 
             mesh.vertices = vertices;
             mesh.triangles = triangles;
@@ -63,8 +98,6 @@ namespace Streets
             mesh.RecalculateBounds();
 
             filter.mesh = mesh;
-
-            return go;
         }
 
         public static GameObject GenerateComplexStreetGameObject(List<Vector3> points, StreetInfo info)
@@ -115,26 +148,90 @@ namespace Streets
             List<int> triangles = new List<int>();
 
             Vector3 center = intersection.transform.position;
-            Vector3[] intersectionDirections = new Vector3[intersection.SegmentStartingPoints.Count];
+            Vector3[] intersectionDirections = new Vector3[intersection.Edges.Count];
 
-            int index = 0;
-            foreach (Vector3Tuple tuple in intersection.SegmentStartingPoints)
+            
+            ////////////////////////////////////////////////////////////////////////////////////
+            center.y -= 0.01f;
+            foreach (Lane edge in intersection.Edges)
             {
-                intersectionDirections[index++] = (tuple.StartingPoint - center).normalized;
+                StreetInfo info = edge.Segment.Info;
+                Vector3 dir = (edge.WayPoints[0] - edge.WayPoints[1]).normalized;
+                Vector3 normal = new Vector3(-dir.z, 0f, dir.x).normalized;
+
+                vertices.Add(-center + edge.WayPoints[0] - 1.5f * info.trackWidth * normal);
+                vertices.Add(-center + edge.WayPoints[0] + 0.5f * info.trackWidth * normal);
+            }
+            
+            vertices.Add(Vector3.zero);
+
+            int last = vertices.Count - 1;
+
+            for (int i = 0; i < last - 1; i++)
+            {
+                triangles.Add(i);
+                triangles.Add(i+1);
+                triangles.Add(last);
+            }
+            
+            triangles.Add(last - 1);
+            triangles.Add(0);
+            triangles.Add(last);
+            
+            /*
+            int index = 0;
+            for (int i = 0; i < intersection.Edges.Count - 1; i++)
+            {
+                index = i * 2;
+                triangles.Add(index);
+                triangles.Add(index+1);
+                triangles.Add(index+2);
             }
 
-            //float intersectionHalfWidth = 1.5f;
-            
-            //Anglecheck
-            /*
-            if (Vector3.SignedAngle(-intersectionDirections[0], intersectionDirections[2], Vector3.up) < 0f)
+            index += 2;
+            triangles.Add(index);
+            triangles.Add(index+1);
+            triangles.Add(0);
+
+            index = 0;
+            for (int i = 0; i < intersection.Edges.Count; i++)
             {
-                Vector3 straightDirection = intersectionDirections[1];
-                intersectionDirections[1] = intersectionDirections[2];
-                intersectionDirections[2] = straightDirection;
+                triangles.Add(index);
+                triangles.Add(index + 1);
+                triangles.Add(vertices.Count - 1);
+
+                index += 2;
             }
             */
-            StreetInfo info = intersection.Segments[0].Info;
+
+            //Vector3 dir1 = (intersection.Edges[0].WayPoints[0] - intersection.Edges[0].WayPoints[1]).normalized;
+            //Vector3 normal = new Vector3(-dir1.z, 0f, dir1.x).normalized;
+            //vertices.Add(-center + intersection.Edges[0].WayPoints[0] + 0.5f * info.trackWidth * normal);
+            //vertices.Add(-center + intersection.Edges[0].WayPoints[0] - 0.5f * info.trackWidth * normal);
+            //vertices.Add(Vector3.zero);
+            
+            //triangles.Add(0);
+            //triangles.Add(1);
+            //triangles.Add(2);
+            
+            /*
+            int index = 0;
+            foreach (Lane edge in intersection.Edges)
+            {
+                Vector3 direction;
+                if (edge.Segment.Lane1 == edge)
+                {
+                    direction = (edge.Segment.StreetPoints[0] - center);
+                }
+                else
+                {
+                    direction = (edge.Segment.StreetPoints[edge.Segment.StreetPoints.Count - 1] - center);
+                }
+
+                intersectionDirections[index++] = direction.normalized;
+            }
+
+            StreetInfo info = intersection.Edges[0].Segment.Info;
             
             Vector3 firstDirection = intersectionDirections[0] * (info.lanes * info.trackWidth);
                 
@@ -155,7 +252,7 @@ namespace Streets
             int triangleIndex = 4;
             for (int i = 0; i < intersectionDirections.Length; i++)
             {
-                info = intersection.Segments[i].Info;
+                info = intersection.Edges[i].Segment.Info;
 
                 Vector3 direction = intersectionDirections[i] * (info.lanes * info.trackWidth);
                 normal = new Vector3(-direction.z, 0f, direction.x);
@@ -163,7 +260,18 @@ namespace Streets
                 vertices.Add(new Vector3(direction.x + normal.x, 0.01f, direction.z + normal.z));
                 vertices.Add(new Vector3(direction.x - normal.x, 0.01f, direction.z - normal.z));
 
-                Vector3 streetDirection = intersection.SegmentStartingPoints[i].Direction * (info.lanes * info.trackWidth);
+                Vector3 streetDirection;
+                Lane edge = intersection.Edges[i];
+                if (edge.Segment.Lane1 == edge)
+                {
+                    streetDirection = (edge.Segment.StreetPoints[1] - edge.Segment.StreetPoints[0]).normalized * (info.lanes * info.trackWidth);
+                }
+                else
+                {
+                    int last = edge.Segment.StreetPoints.Count - 1;
+                    streetDirection = (edge.Segment.StreetPoints[last - 1] - edge.Segment.StreetPoints[last]).normalized * (info.lanes * info.trackWidth);
+                }
+                    
                 normal = new Vector3(-streetDirection.z, 0f, streetDirection.x);
 
                 vertices.Add(new Vector3(direction.x + streetDirection.x + normal.x, 0.01f, direction.z + streetDirection.z + normal.z));
@@ -178,7 +286,7 @@ namespace Streets
 
                 triangleIndex += 4;
             }
-
+            */
 
             mesh.vertices = vertices.ToArray();
             mesh.triangles = triangles.ToArray();
@@ -187,6 +295,7 @@ namespace Streets
             mesh.RecalculateBounds();
             
             intersection.UpdateMesh(mesh);
+            
         }
 
         private static Vector2[] CreateUvs(int pointAmount)

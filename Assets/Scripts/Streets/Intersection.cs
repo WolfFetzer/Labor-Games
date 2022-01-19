@@ -6,141 +6,45 @@ using Util;
 
 public class Intersection : MonoBehaviour
 {
-    private static int _idCounter;
-
-    public List<IntersectionEdge> Edges { get; } = new List<IntersectionEdge>();
-    
-    //public List<Vector3Tuple> SegmentStartingPoints { get; } = new List<Vector3Tuple>();
-    public List<Vector3Tuple> SegmentStartingPoints = new List<Vector3Tuple>();
-    
-    
-    public List<StreetSegment> Segments { get; } = new List<StreetSegment>();
+    private static int IdCounter;
+    public List<Lane> Edges { get; } = new List<Lane>();
 
     private void Awake()
     {
-        name = $"Intersection {_idCounter++}";
+        name = $"Intersection {IdCounter++}";
     }
 
-    private List<Vector3Tuple> ins = new List<Vector3Tuple>(); 
-    private List<Vector3Tuple> outs = new List<Vector3Tuple>(); 
-    
-    public void AddSegment(StreetSegment segment, StreetDirection direction)
+    public void AddLane(Lane lane)
     {
-        if (direction == StreetDirection.Forward)
+        if(Edges.Count != 0)
         {
-            if (segment.IntersectionAtEnd != null)
+            Vector3 dir1 = Edges[0].WayPoints[1] - Edges[0].WayPoints[0];
+            Vector3 dir2 = lane.WayPoints[1] - lane.WayPoints[0];
+            float angle = Vector3.SignedAngle(dir1, dir2, Vector3.up);
+            if (angle < 0) angle += 360f;
+            
+            for (int i = 1; i < Edges.Count; i++)
             {
-                Edges.Add(new IntersectionEdge(segment.IntersectionAtEnd, segment, segment.edge1));
-            }
+                dir2 = Edges[i].WayPoints[1] - Edges[i].WayPoints[0];
+                float otherAngle = Vector3.SignedAngle(dir1, dir2, Vector3.up);
+                if (otherAngle < 0) otherAngle += 360f;
 
-            SegmentStartingPoints.Add(new Vector3Tuple()
-            {
-                StartingPoint = segment.StreetPoints[0],
-                Direction = (segment.StreetPoints[1] - segment.StreetPoints[0]).normalized
-            });
-            
-            //
-            //
-            Vector3Tuple newIn = new Vector3Tuple()
-            {
-                StartingPoint = segment.edge2[segment.edge2.Count - 1],
-                Direction = (segment.edge2[segment.edge2.Count - 1] - segment.edge2[segment.edge2.Count - 2]).normalized
-            };
-            
-            ins.Add(newIn);
-            foreach (Vector3Tuple tuple in outs)
-            {
-                //_selectedStreetInfo.lanes * 2 * _selectedStreetInfo.trackWidth
-                wayPoints.Add(
-                    new List<Vector3>()
-                    {
-                        newIn.StartingPoint + 4f * newIn.Direction, 
-                        tuple.StartingPoint + 4f * tuple.Direction
-                    });
+                if (angle < otherAngle)
+                {
+                    Edges.Insert(i, lane);
+                    return;
+                }
             }
-            
-            outs.Add(new Vector3Tuple()
-            {
-                StartingPoint = segment.edge1[0],
-                Direction = (segment.edge1[0] - segment.edge1[1]).normalized
-            });
         }
-        else
-        {
-            if (segment.IntersectionAtStart != null)
-            {
-                Edges.Add(new IntersectionEdge(segment.IntersectionAtStart, segment, segment.edge2));
-            }
-            
-            SegmentStartingPoints.Add(new Vector3Tuple()
-            {
-                StartingPoint = segment.StreetPoints[segment.StreetPoints.Count - 1],
-                Direction = (segment.StreetPoints[segment.StreetPoints.Count - 2] - segment.StreetPoints[segment.StreetPoints.Count - 1]).normalized
-            });
-            //
-            //
-            Vector3Tuple newIn = new Vector3Tuple()
-            {
-                StartingPoint = segment.edge1[segment.edge1.Count - 1],
-                Direction = (segment.edge1[segment.edge1.Count - 1] - segment.edge1[segment.edge1.Count - 2]).normalized
-            };
-            
-            ins.Add(newIn);
-
-            foreach (Vector3Tuple tuple in outs)
-            {
-                wayPoints.Add(new List<Vector3>(){newIn.StartingPoint + 4f * newIn.Direction, tuple.StartingPoint + 4f * tuple.Direction});
-            }
-            
-            outs.Add(new Vector3Tuple()
-            {
-                StartingPoint = segment.edge2[0],
-                Direction = (segment.edge2[0] - segment.edge2[1]).normalized
-            });
-            //
-            //
-            //
-            /*
-            foreach (StreetSegment streetSegment in Segments)
-            {
-            
-            }
-            */
-            //
-            //
-            //
-            //
-            //
-        }
-
-        Segments.Add(segment);
+        Edges.Add(lane);
     }
-    //
-    //
-    //
-    //
-    //
-    public List<List<Vector3>> wayPoints = new List<List<Vector3>>(); 
 
-    public void RemoveNeighbor(Intersection intersection)
+    public void RemoveLane(Lane lane)
     {
-        Debug.Log("Remove");
-        
-        for (int i = 0; i < Edges.Count; i++)
-            if (Edges[i].Intersection == intersection)
-            {
-                Edges.RemoveAt(i);
-                //SegmentStartingPoints.RemoveAt(i);
-                return;
-            }
+        Edges.Remove(lane);
     }
 
-    public void RemoveSegment(StreetSegment segment)
-    {
-        Segments.Remove(segment);
-    }
-
-    public void UpdateMesh(Mesh mesh)
+    public virtual void UpdateMesh(Mesh mesh)
     {
         GetComponent<MeshFilter>().mesh = mesh;
     }
@@ -149,38 +53,32 @@ public class Intersection : MonoBehaviour
     {
         Vector3 pos1 = transform.position;
         pos1.y += 0.1f;
-
-        foreach (IntersectionEdge intersectionEdge in Edges)
+        
+        foreach (Lane edge in Edges)
         {
-            //Draw center line
-            Gizmos.color = Color.red;
-            Vector3 pos2 = intersectionEdge.Intersection.transform.position;
-            pos2.y += 0.1f;
-            Gizmos.DrawLine(pos1, pos2);
-
             //Draw waypoints
             Gizmos.color = Color.cyan;
-            for (int i = 0; i < intersectionEdge.WayPoints.Count - 1; i++)
+            for (int i = 0; i < edge.WayPoints.Count - 1; i++)
             {
-                Gizmos.DrawLine(intersectionEdge.WayPoints[i], intersectionEdge.WayPoints[i + 1]);
-                Gizmos.DrawSphere(intersectionEdge.WayPoints[i + 1], 0.5f);
+                Gizmos.DrawLine(edge.WayPoints[i], edge.WayPoints[i + 1]);
+                Gizmos.DrawSphere(edge.WayPoints[i + 1], 0.5f);
+                
+                Gizmos.color = Color.green;
             }
         }
+    }
 
-        Gizmos.color = Color.magenta;
-        foreach (List<Vector3> list in wayPoints)
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.red;
+        foreach (Lane edge in Edges)
         {
-            foreach (Vector3 vector3 in list)
-            {
-                Gizmos.DrawSphere(vector3, 0.25f);
-            }
-        }
-        foreach (List<Vector3> list in wayPoints)
-        {
-            for (int i = 0; i < list.Count - 1; i++)
-            {
-                Gizmos.DrawLine(list[i], list[i + 1]);
-            }
+            if(!edge.IsConnected) continue;
+            Vector3 pos = transform.position;
+            Vector3 iPos = edge.Intersection.transform.position;
+            Gizmos.DrawSphere(pos, 0.25f);
+            Gizmos.DrawSphere(iPos, 0.25f);
+            Gizmos.DrawLine(pos, iPos);
         }
     }
 }

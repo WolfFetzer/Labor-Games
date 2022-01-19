@@ -14,7 +14,7 @@ public class ClockUi : MonoBehaviour
         textMesh.text = $"{TimeManager.Instance.GameTime.Hour:00}:{TimeManager.Instance.GameTime.Minute:00}";
     }
     
-    private void OnEnable()
+    private void Start()
     {
         TimeManager.Instance?.Register(TimeUpdate);
     }

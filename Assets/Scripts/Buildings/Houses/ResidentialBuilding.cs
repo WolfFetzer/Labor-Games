@@ -37,7 +37,7 @@ namespace Buildings.Houses
         
         public override void EnterBuilding(Human human)
         {
-            Debug.Log( human + " entered residential building");
+            //Debug.Log( human + " entered residential building");
             presentResidents.Add(human);
             human.CurrentPosition = this;
             

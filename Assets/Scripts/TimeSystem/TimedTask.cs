@@ -24,7 +24,6 @@ namespace TimeSystem
 
         public void Execute()
         {
-            Debug.Log("Execute");
             _action.Invoke();
         }
 

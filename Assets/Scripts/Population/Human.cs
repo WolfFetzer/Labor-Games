@@ -4,6 +4,7 @@ using Pathfinding;
 using Streets;
 using TimeSystem;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Population
 {
@@ -59,6 +60,8 @@ namespace Population
             }
 
             PathNode path = PathFinder.CalculateShortestPath(CurrentPosition, Home);
+            if (!CheckPath(path)) return false;
+            
             Car car = SpawnCar(CurrentPosition);
             Occupation = Occupation.Home;
             car.Move(path, Home, this);
@@ -73,6 +76,8 @@ namespace Population
                 return false;
             }
             PathNode path = PathFinder.CalculateShortestPath(CurrentPosition, Workplace);
+            if (!CheckPath(path)) return false;
+            
             Car car = SpawnCar(CurrentPosition);
             Occupation = Occupation.Working;
             car.Move(path, Workplace, this);
@@ -90,6 +95,8 @@ namespace Population
             if (randomBuilding == null) return false;
             
             PathNode path = PathFinder.CalculateShortestPath(CurrentPosition, randomBuilding);
+            if (!CheckPath(path)) return false;
+            
             Car car = SpawnCar(CurrentPosition);
             Occupation = Occupation.Shopping;
             car.Move(path, randomBuilding, this);
@@ -98,10 +105,17 @@ namespace Population
 
         private Car SpawnCar(Building building)
         {
-            Car car = UnityEngine.Object.Instantiate(GameManager.Instance.carPrefab, building.transform.position, Quaternion.identity).GetComponent<Car>();
+            Car car = Object.Instantiate(GameManager.Instance.carPrefab, building.transform.position - building.transform.forward * 0.01f, Quaternion.identity).GetComponent<Car>();
             CurrentPosition.LeaveBuilding(this);
             CurrentPosition = null;
             return car;
+        }
+
+        private bool CheckPath(PathNode path)
+        {
+            if (path != null) return true;
+            Debug.Log($"{ToString()} couldn't find a path");
+            return false;
         }
 
         public override string ToString()

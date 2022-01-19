@@ -41,7 +41,7 @@ namespace PlayerInput
         public void OnLeftMouseClicked()
         {
             //Todo check money
-            _constructionManager.PlaceConstruction(_camera);
+            _constructionManager.PressedLeftMouse(_camera);
         }
 
         public void OnRightMouseClicked()
